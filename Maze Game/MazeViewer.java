@@ -1,13 +1,16 @@
-// Name: Tian Tan
-// USC loginid: tiantan@usc.edu
+// Name: ZHE JIAO
+// USC loginid: zjiao
 // CS 455 PA3
 // Fall 2016
+
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import javax.swing.JFrame;
 import java.util.Scanner;
+
+import javax.swing.JFrame;
+
 
 /**
  * MazeViewer class
@@ -37,41 +40,45 @@ import java.util.Scanner;
 
 public class MazeViewer {
    
-   private static final char WALL_CHAR = '1'; // WALL_CHAR means char '1'
-   private static final char FREE_CHAR = '0'; // FREE_CHAR means char '0'
+   private static final char WALL_CHAR = '1';
+   private static final char FREE_CHAR = '0';
 
    public static void main(String[] args)  {
 
-	      String fileName = "";
+      String fileName = "";
 
-	      try {
+      try {
 
-	         if (args.length < 1) {
-	            System.out.println("ERROR: missing file name command line argument");
-	         }
-	         else {
-	            fileName = args[0];
-	            
-	            JFrame frame = readMazeFile(fileName);
+         if (args.length < 1) {
+            System.out.println("ERROR: missing file name command line argument");
+         }
+         else {
+            fileName = args[0];
+            
+            JFrame frame = readMazeFile(fileName);
+            
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-	            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-	            frame.setVisible(true);
-	         }
-
-	      }
-	      catch (FileNotFoundException exc) {
-	         System.out.println("File not found: " + fileName);
-	      }
-	      catch (IOException exc) {
-	         exc.printStackTrace();
-	      }
-	   }
+            frame.setVisible(true);
+            
+            
+         }
+      
+      }
+      
+      catch (FileNotFoundException exc) {
+         System.out.println("File not found: " + fileName);
+      }
+      catch (IOException exc) {
+         exc.printStackTrace();
+      }
+      
+   }
 
    /**
     readMazeFile reads in maze from the file whose name is given and 
     returns a MazeFrame created from it.
-   
+    
    @param fileName
              the name of a file to read from (file format shown in class comments, above)
    @returns a MazeFrame containing the data from the file.
@@ -83,56 +90,29 @@ public class MazeViewer {
                that would also involve changing main to catch other exceptions)
    */
    private static MazeFrame readMazeFile(String fileName) throws IOException {
-	   File inputFile = new File(fileName);
-	   Scanner in = new Scanner(inputFile);	   
-	   try{
-		   return readMazeData(in);
-	   }
-	   finally{
-		   in.close();
-	   }
-   }
-   
-   /**
-    * readMazeData Reads in maze data from the scanner that scans the maze file
-    * @param in Scanner that scans the maze file
-    * @return a MazeFrame created from it.
-    */
-   private static MazeFrame readMazeData(Scanner in){
-	   Scanner readLine;
-	   int rowNum = 0, colNum = 0, counter = 0;
-	   String thisLine;
-	   boolean[][] mazeFile = null;
-	   MazeCoord startPoint = null, endPoint = null;
-	   while(in.hasNextLine()){
-		   thisLine = in.nextLine();
-		   if(counter == 0){
-			   readLine = new Scanner(thisLine);
-			   rowNum = readLine.nextInt();
-			   colNum = readLine.nextInt();
-			   mazeFile = new boolean[rowNum][colNum];
-		   }
-		   else if(counter > 0 && counter < rowNum + 1){
-			   for(int i = 0; i < colNum; i++){
-				   if(thisLine.charAt(i) == FREE_CHAR){
-					   mazeFile[counter-1][i] = true;
-				   }
-				   else{
-					   mazeFile[counter-1][i] = false;
-				   }
+	   File inTxt = new File(fileName);
+	   Scanner in = new Scanner(inTxt);
+	   Scanner inLine = new Scanner(in.nextLine());
+	   boolean[][] maze = new boolean[inLine.nextInt()][inLine.nextInt()];
+	   for(int i = 0; i < maze.length; i++)
+	   {
+		   String rowNums = in.nextLine();
+		   for(int j = 0; j < maze[0].length; j++)
+		   {
+			   if (rowNums.charAt(j) == WALL_CHAR)
+			   {
+				   maze[i][j] = true;
+			   }
+			   else
+			   {
+				   maze[i][j] = false;
 			   }
 		   }
-		   else if(counter == rowNum + 1){
-			   readLine = new Scanner(thisLine);
-			   startPoint = new MazeCoord(readLine.nextInt(), readLine.nextInt());
-		   }
-		   else{
-			   readLine = new Scanner(thisLine);
-			   endPoint = new MazeCoord(readLine.nextInt(), readLine.nextInt());
-		   }
-		   counter++;
 	   }
-      return new MazeFrame(mazeFile, startPoint, endPoint);
+	   inLine = new Scanner(in.nextLine());
+	   MazeCoord startLoc = new MazeCoord(inLine.nextInt(), inLine.nextInt());
+	   inLine = new Scanner(in.nextLine());
+	   MazeCoord endLoc = new MazeCoord(inLine.nextInt(), inLine.nextInt());
+       return new MazeFrame(maze, startLoc, endLoc);
    }
-   
 }

@@ -93,6 +93,7 @@ public class MazeFrame extends JFrame {
          boolean success = maze.search();     // maze defined in enclosing MazeFrame
         
          mazeComponent.repaint();  // update drawing to show the results
+         
          System.out.println("DEBUG: " + getSearchMessage(success));
          searchStatusLabel.setText(getSearchMessage(success));
       }

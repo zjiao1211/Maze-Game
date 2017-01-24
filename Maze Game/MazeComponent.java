@@ -1,5 +1,5 @@
-// Name: Tian Tan
-// USC loginid: tiantan@usc.edu
+// Name: ZHE JIAO
+// USC loginid: zjiao
 // CS 455 PA3
 // Fall 2016
 
@@ -7,9 +7,11 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
-import javax.swing.JComponent;
-import java.util.ListIterator;
+import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
 import java.util.LinkedList;
+
+import javax.swing.JComponent;
 
 /**
    MazeComponent class
@@ -24,7 +26,8 @@ public class MazeComponent extends JComponent
    private static final int START_Y = 10;
    private static final int BOX_WIDTH = 20;  // width and height of one maze unit
    private static final int BOX_HEIGHT = 20;
-   private static final int INSET = 2;  // how much smaller on each side to make entry/exit inner box
+   private static final int INSET = 2;  
+                    // how much smaller on each side to make entry/exit inner box
    
    
    /**
@@ -40,62 +43,57 @@ public class MazeComponent extends JComponent
    /**
      Draws the current state of maze including the path through it if one has
      been found.
+     
+     We draw three parts early or late. First one is the maze we read from the external file.
+     Second, entry location is shown in yellow and exit location is shown in green.
+     Finally, draws the path through the maze after called the search method.
      @param g the graphics context
    */
    public void paintComponent(Graphics g)
    {
 	   Graphics2D g2 = (Graphics2D) g;
 	   
-	   
-	   g2.drawRect(START_X, START_Y, BOX_WIDTH * maze.numCols(), 
-			   BOX_HEIGHT * maze.numRows());// draw outline of the maze
-	   
-	   
-	   for(int i = 0; i < maze.numRows(); i++){
-		   for(int j = 0; j < maze.numCols(); j++){
-			   if(maze.hasWallAt(new MazeCoord(i,j))){
+	   //Draw the maze
+	   for(int i = 0; i < maze.numRows(); i++) {
+		   for(int j = 0; j < maze.numCols(); j++) {
+			   Rectangle unit = new Rectangle(START_X + j * BOX_WIDTH, START_Y + i * BOX_HEIGHT , BOX_WIDTH, BOX_HEIGHT);
+			   if(maze.hasWallAt(new MazeCoord(i, j))) {
 				   g2.setColor(Color.BLACK);
-				   Rectangle wall = new Rectangle(START_X + BOX_WIDTH * j, 
-						   START_Y + BOX_HEIGHT * i, 
-						   BOX_WIDTH, BOX_HEIGHT);
-				   g2.fill(wall);
-			   }
+				   g2.fill(unit);
+			   } else {
+				   g2.setColor(Color.WHITE);
+				   g2.fill(unit);
+			   }  
 		   }
-	   }// paint wall with black solid square
+	   }
 	   
-	   g2.setColor(Color.YELLOW);
-	   Rectangle entry = new Rectangle(START_X + BOX_WIDTH * maze.getEntryLoc().getCol() + INSET, 
-			   START_Y + BOX_HEIGHT * maze.getEntryLoc().getRow() + INSET, 
-			   BOX_WIDTH - 2 * INSET, BOX_HEIGHT - 2 * INSET); 
-	   				// times 2 is because we need to set square at the center, every side should be smaller
-	   g2.fill(entry);// paint start location with yellow solid square
-	   
-	   g2.setColor(Color.GREEN);
-	   Rectangle exit = new Rectangle(START_X + BOX_WIDTH * maze.getExitLoc().getCol() + INSET, 
-			   START_Y + BOX_HEIGHT * maze.getExitLoc().getRow() + INSET, 
+	   //Draw the entry and exit locations
+	   Rectangle startUnit = new Rectangle(START_X + maze.getEntryLoc().getCol() * BOX_WIDTH + INSET, 
+			   START_Y + maze.getEntryLoc().getRow() * BOX_HEIGHT + INSET, 
 			   BOX_WIDTH - 2 * INSET, BOX_HEIGHT - 2 * INSET);
-	   g2.fill(exit);// paint target ending location with green solid square
-	      
-	   LinkedList<MazeCoord> pathList = maze.getPath();
-	   if(!pathList.isEmpty()){
-		   ListIterator<MazeCoord> pathIter = pathList.listIterator();
-		   MazeCoord currentLoc = null, nextLoc = null;
+	   g2.setColor(Color.YELLOW);
+	   g2.fill(startUnit);
+	   
+	   Rectangle endUnit = new Rectangle(START_X + maze.getExitLoc().getCol() * BOX_WIDTH + INSET, 
+			   START_Y + maze.getExitLoc().getRow() * BOX_HEIGHT + INSET, 
+			   BOX_WIDTH - 2 * INSET , BOX_HEIGHT - 2 * INSET);
+	   g2.setColor(Color.GREEN);
+	   g2.fill(endUnit);
+	   
+	   //Draw the path after calling the search method
+	   LinkedList<MazeCoord> path = maze.getPath();
+	   for(int i = 0; i < path.size() - 1; i++) {
+		   MazeCoord firstCoord = path.get(i); 
+		   MazeCoord secondCoord = path.get(i + 1); 
+		   Point2D.Double from = new Point2D.Double(START_X + firstCoord.getCol() * BOX_WIDTH + BOX_WIDTH / 2, 
+				   START_Y + firstCoord.getRow() * BOX_HEIGHT + BOX_HEIGHT / 2); 
+		   Point2D.Double to = new Point2D.Double(START_X + secondCoord.getCol() * BOX_WIDTH + BOX_WIDTH / 2, 
+				   START_Y + secondCoord.getRow() * BOX_HEIGHT + BOX_HEIGHT / 2); 
+		   Line2D.Double segment = new Line2D.Double(from, to);
 		   g2.setColor(Color.BLUE);
-		   if(pathIter.hasNext()){
-			   currentLoc = pathIter.next();
-		   }
-		   while(pathIter.hasNext()){
-			   nextLoc = pathIter.next();
-			   g2.drawLine(START_X + BOX_WIDTH * (currentLoc.getCol() * 2 + 1) / 2,
-						   START_Y + BOX_HEIGHT * (currentLoc.getRow() * 2 + 1) / 2, 
-						   START_X + BOX_WIDTH * (nextLoc.getCol() * 2 + 1) / 2, 
-						   START_Y + BOX_HEIGHT * (nextLoc.getRow() * 2 + 1) / 2);
-			   					// to set two endpoints of the line at the center of the square
-			   currentLoc = nextLoc;
-		   }
-		   pathList.clear();// after painting, clear the pathList for the next search round
-	   }// draw the result path with blue line, if a maze has one
-   }   
+		   g2.draw(segment);
+	   }
+   } 
 }
 
 

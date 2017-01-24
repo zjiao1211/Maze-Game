@@ -1,10 +1,10 @@
-// Name: Tian Tan
-// USC loginid: tiantan@usc.edu
+// Name: ZHE JIAO
+// USC loginid: zjiao
 // CS 455 PA3
 // Fall 2016
 
-import java.util.Arrays;
 import java.util.LinkedList;
+
 
 /**
    Maze class
@@ -25,29 +25,25 @@ import java.util.LinkedList;
      -- in mazeData the first index indicates the row. e.g., mazeData[row][col]
      -- only travel in 4 compass directions (no diagonal paths)
      -- can't travel through walls
+     
+   Representation invariant: there are two newly-created arrays(visited and newMaze). The visited array 
+   		keeps track of which positions we've already visited in our search for a path. And newMaze is an
+   		extended array which pads the original mazeDate matrix with phantom walls all around it.
+   
  */
 
 public class Maze {
    
-   public static final boolean FREE = false; // FREE means false
-   public static final boolean WALL = true; // WALL means true
-   public static final int RIGHT = 0; // RIGHT means integer 0
-   public static final int UP = 1; // UP means integer 1
-   public static final int LEFT = 2; // LEFT means integer 2
-   public static final int DOWN = 3; // DOWN means integer 3
-   public static final int DIRECTION = 4; // Only 4 directions can a block get to
-   public static final int STEP = 1; // We can only take a step by change 1 direction at a time
-   
-   private LinkedList<MazeCoord> pathList; // to store the path from start to end with MazeCoord on the way
-   private boolean[][] maze; // A boolean type array, used to store the maze
-   private boolean[][] visited; // A boolean type array, used to store the MazeCoord we had been searched for
-   private MazeCoord mazeStart; // A MazeCoord type object, used to store the position of the start point
-   private MazeCoord mazeEnd; // A MazeCoord type object, used to store the position of the target ending point
-   private MazeCoord currentLoc; // A MazeCoord type object, used to store the current location
-
-   
+   public static final boolean FREE = false;
+   public static final boolean WALL = true;
+   public static final int outerWALLs = 2;
+   public static final int jumpIndex = 2;
+   private MazeCoord startLoc;
+   private MazeCoord endLoc;
+   private boolean[][] mazeData;
+   private LinkedList<MazeCoord> path;
    /**
-      Constructs a maze.
+      Constructs a maze. And we initializes the path to a empty LinkedList;
       @param mazeData the maze to search.  See general Maze comments for what
       goes in this array.
       @param startLoc the location in maze to start the search (not necessarily on an edge)
@@ -58,22 +54,10 @@ public class Maze {
     */
    public Maze(boolean[][] mazeData, MazeCoord startLoc, MazeCoord endLoc)
    {
-	   maze = new boolean[mazeData.length][mazeData[0].length];
-	   for(int i = 0; i < mazeData.length; i++){
-		   for(int j = 0; j < mazeData[0].length; j++){
-			   if(mazeData[i][j] == true){
-				   maze[i][j] = FREE;
-			   }
-			   else{
-				   maze[i][j] = WALL;
-			   }
-		   }
-	   }
-	   mazeStart = new MazeCoord(startLoc.getRow(),startLoc.getCol());
-	   mazeEnd = new MazeCoord(endLoc.getRow(),endLoc.getCol());
-	   currentLoc = mazeStart;
-	   visited = new boolean[mazeData.length][mazeData[0].length];
-	   pathList = new LinkedList<MazeCoord>();
+	   this.mazeData = mazeData;
+	   this.startLoc = startLoc;
+	   this.endLoc = endLoc;
+	   this.path = new LinkedList<MazeCoord>();
    }
 
 
@@ -82,7 +66,7 @@ public class Maze {
    @return number of rows
    */
    public int numRows() {
-      return maze.length;
+      return mazeData.length; 
    }
 
    
@@ -91,7 +75,7 @@ public class Maze {
    @return number of columns
    */   
    public int numCols() {
-      return maze[0].length;
+      return mazeData[0].length; 
    } 
  
    
@@ -102,7 +86,10 @@ public class Maze {
       PRE: 0 <= loc.getRow() < numRows() and 0 <= loc.getCol() < numCols()
    */
    public boolean hasWallAt(MazeCoord loc) {
-      return maze[loc.getRow()][loc.getCol()];
+	  if(mazeData[loc.getRow()][loc.getCol()]) {
+		  return true;
+	  }
+      return false;  
    }
    
 
@@ -110,7 +97,7 @@ public class Maze {
       Returns the entry location of this maze.
     */
    public MazeCoord getEntryLoc() {
-      return mazeStart;
+      return new MazeCoord(startLoc.getRow(),startLoc.getCol());  
    }
    
    
@@ -118,7 +105,7 @@ public class Maze {
    Returns the exit location of this maze.
    */
    public MazeCoord getExitLoc() {
-      return mazeEnd;
+	   return new MazeCoord(endLoc.getRow(),endLoc.getCol());  
    }
 
    
@@ -130,63 +117,72 @@ public class Maze {
       @return the maze path
     */
    public LinkedList<MazeCoord> getPath() {
-      return pathList;
+	  return path;  
    }
-
 
    /**
       Find a path through the maze if there is one.  Client can access the
       path found via getPath method.
+      
+      Representation invariant: there are two newly-created arrays(visited and newMaze). 
+      		The specific instructions are at the beginning.
+      		
+      This part is mainly to initializes the path, visited array and newMaze array.
+      
       @return whether path was found.
     */
    public boolean search()  {
-	   if(currentLoc.getCol() < 0 || currentLoc.getCol() >= numCols() || 
-	    	currentLoc.getRow() < 0 || currentLoc.getRow() >= numRows()) // if current location is out of range, return false
-		   return false;
-	   if(hasWallAt(currentLoc)||hasWallAt(mazeEnd)) // if current location has wall, return false
-		   return false;
-       if(visited[currentLoc.getRow()][currentLoc.getCol()]) // if place has already been checked, return false
-    	   return false;
-       if(currentLoc.equals(mazeEnd)){ // if reach mazeEnd, then return true
-    	   pathList.add(0, currentLoc); // to insert all results in the front of the list
-    	   for(int i = 0; i < visited.length; i++){ // upon finishing searching, clear up the visited array for next round of search
-    		   Arrays.fill(visited[i], false);
-    	   }
-    	   return true;  
-       }
-       
-      visited[currentLoc.getRow()][currentLoc.getCol()] = true;
-      for(int i = 0; i < DIRECTION; i++){
-    	  move(i);
-    	  if(search()){
-    		  move(((i + STEP * 2) % DIRECTION)); // back to the original location
-    		  pathList.add(0, currentLoc); // to insert all results in the front of the list
-    		  return true;
-    	  }
-    	  else{
-    		  move(((i + STEP * 2) % DIRECTION)); // back to the original location
-    	  }   	  
+	  path = new LinkedList<MazeCoord>();
+      boolean[][] visited = new boolean[mazeData.length][mazeData[0].length];
+      boolean[][] newMaze = new boolean[mazeData.length + outerWALLs][mazeData[0].length + outerWALLs];
+      
+      for(int i = 0; i < newMaze.length; i++) {
+    	  newMaze[i][0] = true;
+    	  newMaze[i][newMaze[0].length - 1] = true;
       }
-      return false;
+      for(int i = 0; i < newMaze[0].length; i++) {
+    	  newMaze[0][i] = true;
+    	  newMaze[newMaze.length - 1][i] = true;
+      }
+      for(int i = 1; i < newMaze.length - 1; i++) {
+    	  for(int j = 1; j < newMaze[0].length - 1; j++) {
+    		  newMaze[i][j] = mazeData[i - 1][j - 1];
+    	  }
+      }
+      path.add(startLoc);
+      return helper(newMaze, visited, new MazeCoord(startLoc.getRow() + 1, startLoc.getCol() + 1) , path);
+
    }
    
    /**
-    * move current location to a certain direction relatively to former location
-    * @param nextDirection  next direction we should look up to
-    */
-   public void move(int nextDirection){
-	   if(nextDirection == RIGHT){
-		   currentLoc = new MazeCoord(currentLoc.getRow(), currentLoc.getCol() + STEP);
-	   }
-	   else if(nextDirection == UP){
-		   currentLoc = new MazeCoord(currentLoc.getRow() + STEP, currentLoc.getCol());
-	   }
-	   else if(nextDirection == LEFT){
-		   currentLoc = new MazeCoord(currentLoc.getRow(), currentLoc.getCol() - STEP);
-	   }
-	   else{
-		   currentLoc = new MazeCoord(currentLoc.getRow() - STEP, currentLoc.getCol());
-	   }
-   }
+   		A helper routine (private method) which does the actual recursion. It will search 
+   		from a particular location. If there is a free path from current position to the end 
+   		position, and it returns true. Otherwise, it returns false.
 
+   		@return the maze path
+   */
+   private boolean helper(boolean[][] newMaze, boolean[][] visited, MazeCoord currLoc, LinkedList<MazeCoord> path) {
+	   if(newMaze[currLoc.getRow()][currLoc.getCol()] || visited[currLoc.getRow() - 1][currLoc.getCol() - 1]) {
+		   return false;
+	   }
+	   if(currLoc.equals(new MazeCoord(endLoc.getRow() + 1, endLoc.getCol() + 1))) {
+		   return true;
+	   }
+	   visited[currLoc.getRow() - 1][currLoc.getCol() - 1] = true;
+	   for(int i = -1; i <= 1; i += jumpIndex) {
+		   path.add(new MazeCoord(currLoc.getRow() - 1 + i, currLoc.getCol() - 1));
+		   if(helper(newMaze, visited, new MazeCoord(currLoc.getRow() + i, currLoc.getCol()), path)) {
+			   return true;
+		   }
+		   path.removeLast();
+	   }
+	   for(int i = -1; i <= 1; i += jumpIndex) {
+		   path.add(new MazeCoord(currLoc.getRow() - 1, currLoc.getCol() + i - 1));
+		   if(helper(newMaze, visited, new MazeCoord(currLoc.getRow(), currLoc.getCol() + i), path)) {
+			   return true;
+		   }
+		   path.removeLast();
+	   }
+	   return false;
+   }
 }
